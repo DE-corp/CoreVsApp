@@ -4,6 +4,7 @@ using Microsoft.AspNetCore.Http;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using System;
+using System.IO;
 
 namespace CoreVsApp
 {
@@ -30,6 +31,21 @@ namespace CoreVsApp
             }
 
             app.UseRouting();
+
+            //Используем метод Use, чтобы запрос передавался дальше по конвейеру
+            app.Use(async (context, next) =>
+            {
+                // Строка для публикации в лог
+                string logMessage = $"[{DateTime.Now}]: New request to http://{context.Request.Host.Value + context.Request.Path}{Environment.NewLine}";
+
+                // Путь до лога (опять-таки, используем свойства IWebHostEnvironment)
+                string logFilePath = Path.Combine(env.ContentRootPath, "Logs", "RequestLog.txt");
+
+                // Используем асинхронную запись в файл
+                await File.AppendAllTextAsync(logFilePath, logMessage);
+
+                await next.Invoke();
+            });
 
             //Добавляем компонент для логирования запросов с использованием метода Use.
             app.Use(async (context, next) =>
