@@ -4,14 +4,17 @@ using Microsoft.AspNetCore.Http;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Threading.Tasks;
 
 namespace CoreVsApp
 {
     public class Startup
     {
+        IWebHostEnvironment _env;
+
+        public Startup(IWebHostEnvironment env)
+        {
+            _env = env;
+        }
         // This method gets called by the runtime. Use this method to add services to the container.
         // For more information on how to configure your application, visit https://go.microsoft.com/fwlink/?LinkID=398940
         public void ConfigureServices(IServiceCollection services)
@@ -36,19 +39,45 @@ namespace CoreVsApp
                 await next.Invoke();
             });
 
-            // Сначала используем метод Use, чтобы не прерывать ковейер
+            //Добавляем компонент с настройкой маршрутов для главной страницы
             app.UseEndpoints(endpoints =>
             {
-                endpoints.MapGet("/config", async context =>
+                endpoints.MapGet("/", async context =>
                 {
-                    await context.Response.WriteAsync($"App name: {env.ApplicationName}. App running configuration: {env.EnvironmentName}");
+                    await context.Response.WriteAsync($"Welcome to the {env.ApplicationName}!");
                 });
             });
 
-            // Завершим вызовом метода Run
+            // Все прочие страницы имеют отдельные обработчики
+            app.Map("/about", About);
+            app.Map("/config", Config);
+
+            // Обработчик для ошибки "страница не найдена"
             app.Run(async (context) =>
             {
-                await context.Response.WriteAsync($"Welcome to the {env.ApplicationName}!");
+                await context.Response.WriteAsync($"Page not found");
+            });
+        }
+
+        /// <summary>
+        ///  Обработчик для страницы About
+        /// </summary>
+        private void About(IApplicationBuilder app)
+        {
+            app.Run(async context =>
+            {
+                await context.Response.WriteAsync($"{_env.ApplicationName} - ASP.Net Core tutorial project");
+            });
+        }
+
+        /// <summary>
+        ///  Обработчик для главной страницы
+        /// </summary>
+        private void Config(IApplicationBuilder app)
+        {
+            app.Run(async context =>
+            {
+                await context.Response.WriteAsync($"App name: {_env.ApplicationName}. App running configuration: {_env.EnvironmentName}");
             });
         }
     }
