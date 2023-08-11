@@ -28,12 +28,27 @@ namespace CoreVsApp
 
             app.UseRouting();
 
+            //Добавляем компонент для логирования запросов с использованием метода Use.
+            app.Use(async (context, next) =>
+            {
+                // Для логирования данных о запросе используем свойства объекта HttpContext
+                Console.WriteLine($"[{DateTime.Now}]: New request to http://{context.Request.Host.Value + context.Request.Path}");
+                await next.Invoke();
+            });
+
+            // Сначала используем метод Use, чтобы не прерывать ковейер
             app.UseEndpoints(endpoints =>
             {
-                endpoints.MapGet("/", async context =>
+                endpoints.MapGet("/config", async context =>
                 {
-                    await context.Response.WriteAsync("Hello World!");
+                    await context.Response.WriteAsync($"App name: {env.ApplicationName}. App running configuration: {env.EnvironmentName}");
                 });
+            });
+
+            // Завершим вызовом метода Run
+            app.Run(async (context) =>
+            {
+                await context.Response.WriteAsync($"Welcome to the {env.ApplicationName}!");
             });
         }
     }
